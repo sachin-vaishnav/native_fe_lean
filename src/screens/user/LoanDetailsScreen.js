@@ -1,0 +1,378 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  Alert,
+  TouchableOpacity,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { loanAPI } from '../../services/api';
+import Card from '../../components/Card';
+import EMICard from '../../components/EMICard';
+import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../styles/theme';
+
+const LoanDetailsScreen = ({ route, navigation }) => {
+  const raw = route.params?.loanId;
+  const loanId = raw?._id || raw;
+  const [loan, setLoan] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [emis, setEmis] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchLoanDetails = async () => {
+    try {
+      const response = await loanAPI.getLoanDetails(loanId);
+      setLoan(response.data.loan);
+      setStats(response.data.stats);
+      setEmis(response.data.emis || []);
+    } catch (error) {
+      console.error('Error fetching loan details:', error);
+      Alert.alert('Error', 'Failed to load loan details');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLoanDetails();
+  }, [loanId]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchLoanDetails();
+  };
+
+  const formatCurrency = (amount) => {
+    return `₹${amount?.toLocaleString('en-IN') || 0}`;
+  };
+
+  const formatDate = (date) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'approved':
+        return colors.success;
+      case 'pending':
+        return colors.warning;
+      case 'rejected':
+        return colors.error;
+      case 'completed':
+        return colors.primary;
+      default:
+        return colors.textSecondary;
+    }
+  };
+
+  const handlePayEMI = (emi) => {
+    navigation.navigate('Payment', { emi, loan });
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!loan) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loan not found</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Loan Overview */}
+        <Card>
+          <View style={styles.loanHeader}>
+            <Text style={styles.loanAmount}>{formatCurrency(loan.amount)}</Text>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: `${getStatusColor(loan.status)}20` },
+              ]}
+            >
+              <Text style={[styles.statusText, { color: getStatusColor(loan.status) }]}>
+                {loan.status.toUpperCase()}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Applied On</Text>
+              <Text style={styles.detailValue}>{formatDate(loan.createdAt)}</Text>
+            </View>
+            {loan.status === 'approved' && (
+              <>
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Start Date</Text>
+                  <Text style={styles.detailValue}>{formatDate(loan.startDate)}</Text>
+                </View>
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>End Date</Text>
+                  <Text style={styles.detailValue}>{formatDate(loan.endDate)}</Text>
+                </View>
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Daily EMI</Text>
+                  <Text style={styles.detailValue}>{formatCurrency(loan.dailyEMI)}</Text>
+                </View>
+              </>
+            )}
+          </View>
+        </Card>
+
+        {/* Applicant Details */}
+        <Card title="Applicant Details">
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Name:</Text>
+            <Text style={styles.infoValue}>{loan.applicantName}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Mobile:</Text>
+            <Text style={styles.infoValue}>{loan.applicantMobile}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Address:</Text>
+            <Text style={styles.infoValue}>{loan.applicantAddress}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Aadhaar:</Text>
+            <Text style={styles.infoValue}>XXXX XXXX {loan.applicantAadhaar?.slice(-4)}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>PAN:</Text>
+            <Text style={styles.infoValue}>{loan.applicantPan}</Text>
+          </View>
+        </Card>
+
+        {/* Payment Stats */}
+        {stats && (
+          <Card title="Payment Summary">
+            <View style={styles.statsGrid}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{stats.paidEMIs}</Text>
+                <Text style={styles.statLabel}>Paid EMIs</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={[styles.statNumber, styles.pendingNumber]}>{stats.pendingEMIs}</Text>
+                <Text style={styles.statLabel}>Pending</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={[styles.statNumber, styles.overdueNumber]}>{stats.overdueEMIs}</Text>
+                <Text style={styles.statLabel}>Overdue</Text>
+              </View>
+            </View>
+
+            <View style={styles.amountSummary}>
+              <View style={styles.amountRow}>
+                <Text style={styles.amountLabel}>Total Paid:</Text>
+                <Text style={[styles.amountValue, styles.paidAmount]}>
+                  {formatCurrency(stats.totalPaid)}
+                </Text>
+              </View>
+              <View style={styles.amountRow}>
+                <Text style={styles.amountLabel}>Total Pending:</Text>
+                <Text style={[styles.amountValue, styles.pendingAmount]}>
+                  {formatCurrency(stats.totalPending)}
+                </Text>
+              </View>
+              {stats.totalPenalty > 0 && (
+                <View style={styles.amountRow}>
+                  <Text style={styles.amountLabel}>Total Penalty:</Text>
+                  <Text style={[styles.amountValue, styles.penaltyAmount]}>
+                    {formatCurrency(stats.totalPenalty)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Card>
+        )}
+
+        {/* EMI Schedule - Pending first, then paid */}
+        {emis.length > 0 && (
+          <View style={styles.emisSection}>
+            <Text style={styles.sectionTitle}>EMI Schedule</Text>
+            {[...emis]
+              .sort((a, b) => {
+                if (a.status === 'paid' && b.status !== 'paid') return 1;
+                if (a.status !== 'paid' && b.status === 'paid') return -1;
+                return a.dayNumber - b.dayNumber;
+              })
+              .map((emi) => (
+                <EMICard
+                  key={emi._id}
+                  emi={emi}
+                  onPay={emi.status !== 'paid' ? handlePayEMI : null}
+                  showPaidAt
+                />
+              ))}
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing.md,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: fontSize.lg,
+    color: colors.primary,
+  },
+  loanHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  loanAmount: {
+    fontSize: fontSize.xxxl,
+    fontWeight: fontWeight.bold,
+    color: colors.primary,
+  },
+  statusBadge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+  },
+  statusText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  detailItem: {
+    width: '50%',
+    marginBottom: spacing.md,
+  },
+  detailLabel: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  detailValue: {
+    fontSize: fontSize.md,
+    color: colors.text,
+    fontWeight: fontWeight.medium,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: spacing.sm,
+  },
+  infoLabel: {
+    width: 80,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  infoValue: {
+    flex: 1,
+    fontSize: fontSize.sm,
+    color: colors.text,
+    fontWeight: fontWeight.medium,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: spacing.lg,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: colors.success,
+  },
+  pendingNumber: {
+    color: colors.warning,
+  },
+  overdueNumber: {
+    color: colors.error,
+  },
+  statLabel: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  amountSummary: {
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    paddingTop: spacing.md,
+  },
+  amountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  amountLabel: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+  },
+  amountValue: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+  },
+  paidAmount: {
+    color: colors.success,
+  },
+  pendingAmount: {
+    color: colors.warning,
+  },
+  penaltyAmount: {
+    color: colors.error,
+  },
+  emisSection: {
+    marginTop: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+});
+
+export default LoanDetailsScreen;

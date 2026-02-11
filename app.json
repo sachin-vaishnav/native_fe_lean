@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Loan App",
+    "slug": "loan-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#6B46C1"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.loanapp.mobile"
+    },
+    "android": {
+      "package": "com.loanapp.mobile"
+    },
+    "extra": {
+      "apiUrl": "https://native-be-lean.onrender.com/api",
+      "eas": {
+        "projectId": "dbb947ec-142f-4aef-a5c2-b46c8da67794"
+      }
+    }
+  }
+}
