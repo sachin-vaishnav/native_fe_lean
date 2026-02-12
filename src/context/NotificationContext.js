@@ -62,9 +62,12 @@ export const NotificationProvider = ({ children }) => {
         return;
       }
       try {
+        const projectId = Constants.expoConfig?.extra?.eas?.projectId || "dbb947ec-142f-4aef-a5c2-b46c8da67794";
+        console.log('Fetching push token for project:', projectId);
         pushToken = (await Notifications.getExpoPushTokenAsync({
-          projectId: Constants.expoConfig.extra.eas.projectId,
+          projectId: projectId,
         })).data;
+        console.log('Successfully fetched push token:', pushToken);
       } catch (e) {
         console.log('Error fetching push token:', e);
       }
@@ -76,12 +79,14 @@ export const NotificationProvider = ({ children }) => {
       try {
         // Use userAPI if available, or direct api call
         if (userAPI && userAPI.savePushToken) {
-          await userAPI.savePushToken(pushToken);
+          console.log('Saving push token to backend...');
+          const response = await userAPI.savePushToken(pushToken);
+          console.log('Token saved response:', response.data);
         } else {
           console.log('savePushToken API not defined yet');
         }
       } catch (error) {
-        console.log('Error saving push token:', error);
+        console.log('Error saving push token to backend:', error);
       }
     }
 
