@@ -70,9 +70,10 @@ const FindEmailScreen = ({ navigation }) => {
                             label="Mobile Number"
                             value={mobile}
                             onChangeText={setMobile}
-                            placeholder="Enter 10-digit mobile number"
+                            placeholder="7XXXXXXXXX"
                             keyboardType="phone-pad"
                             maxLength={10}
+                            leftIcon={<Text style={styles.prefix}>+91 </Text>}
                         />
                         <Button
                             title="Find Email"
@@ -85,10 +86,16 @@ const FindEmailScreen = ({ navigation }) => {
                 ) : (
                     <View style={styles.resultContainer}>
                         <Text style={styles.resultText}>Found Associated Email:</Text>
-                        <Card style={styles.emailCard}>
-                            <Text style={styles.emailValue}>{foundEmail}</Text>
+                        <Card
+                            variant="outlined"
+                            style={styles.emailCardContainer}
+                            contentStyle={styles.emailCardContent}
+                        >
+                            <Text style={styles.emailValue} numberOfLines={1} ellipsizeMode="middle">
+                                {foundEmail}
+                            </Text>
                             <TouchableOpacity onPress={copyToClipboard} style={styles.copyIcon}>
-                                <Ionicons name="copy-outline" size={20} color={colors.primary} />
+                                <Ionicons name="copy-outline" size={18} color={colors.primary} />
                                 <Text style={styles.copyText}>Copy</Text>
                             </TouchableOpacity>
                         </Card>
@@ -164,35 +171,43 @@ const styles = StyleSheet.create({
         marginTop: spacing.xl,
         alignItems: 'center',
     },
+    prefix: {
+        fontSize: fontSize.md,
+        color: colors.text,
+        fontWeight: fontWeight.medium,
+    },
     resultText: {
         fontSize: fontSize.md,
         color: colors.textSecondary,
         marginBottom: spacing.md,
     },
-    emailCard: {
+    emailCardContainer: {
         width: '100%',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: spacing.lg,
-        paddingHorizontal: spacing.lg,
         backgroundColor: colors.surface,
         borderColor: colors.primary,
         borderWidth: 1,
     },
+    emailCardContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: spacing.lg,
+        paddingHorizontal: spacing.md,
+    },
     emailValue: {
-        fontSize: fontSize.lg,
+        fontSize: fontSize.md,
         fontWeight: fontWeight.bold,
         color: colors.primary,
         flex: 1,
+        marginRight: spacing.sm,
     },
     copyIcon: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.primaryLight,
+        backgroundColor: colors.accentLight,
         paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.xs,
-        borderRadius: borderRadius.sm,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
     },
     copyText: {
         fontSize: fontSize.xs,
