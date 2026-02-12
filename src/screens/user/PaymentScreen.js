@@ -9,6 +9,7 @@ import {
   Modal,
   ActivityIndicator,
   AppState,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';

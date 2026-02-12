@@ -151,7 +151,7 @@ const TodayEMIScreen = ({ navigation, route }) => {
             try {
               await adminAPI.markEMIPaid(emiId);
               Alert.alert('Success', 'EMI marked as paid');
-              fetchData(false);
+              fetchData(1);
             } catch (e) {
               Alert.alert('Error', e.response?.data?.message || 'Failed to update');
             }
