@@ -26,7 +26,7 @@ const OTPScreen = ({ route, navigation }) => {
   const { email, otp: testOtp } = route.params || {};
   const [otp, setOtp] = useState(['', '', '', '']);
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer] = useState(30);
+  const [timer, setTimer] = useState(60);
   const { verifyOTP, sendOTP, error, setError } = useAuth();
   const inputRefs = useRef([]);
 
@@ -82,7 +82,7 @@ const OTPScreen = ({ route, navigation }) => {
 
     try {
       const response = await sendOTP(email);
-      setTimer(30);
+      setTimer(60);
       setOtp(['', '', '', '']);
       showAlert('OTP Sent', response.otp ? `(Testing) New OTP: ${response.otp}` : 'New OTP sent to your email.');
     } catch (err) {

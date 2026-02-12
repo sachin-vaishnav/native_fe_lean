@@ -26,8 +26,16 @@ const TABS = [
   { id: 'overdue', label: 'Overdue' },
 ];
 
-const TodayEMIScreen = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState('collections');
+const TodayEMIScreen = ({ navigation, route }) => {
+  const [activeTab, setActiveTab] = useState(route.params?.initialTab || 'collections');
+
+  // Update activeTab if route params change
+  useEffect(() => {
+    if (route.params?.initialTab) {
+      setActiveTab(route.params.initialTab);
+    }
+  }, [route.params?.initialTab]);
+
   const [emis, setEmis] = useState([]);
   const [summary, setSummary] = useState(null);
   const [users, setUsers] = useState([]);

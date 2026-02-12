@@ -143,7 +143,7 @@ const AdminHomeScreen = ({ navigation }) => {
         {/* Today's EMIs */}
         <Card
           title="Today's EMIs"
-          onPress={() => navigation.navigate('EMIsTab')}
+          onPress={() => navigation.navigate('EMIsTab', { initialTab: 'today' })}
         >
           <View style={styles.todayEmiContainer}>
             <View style={styles.todayEmiStat}>
@@ -160,7 +160,7 @@ const AdminHomeScreen = ({ navigation }) => {
           </View>
           <TouchableOpacity
             style={styles.viewAllButton}
-            onPress={() => navigation.navigate('EMIsTab')}
+            onPress={() => navigation.navigate('EMIsTab', { initialTab: 'today' })}
           >
             <Text style={styles.viewAllText}>View All Today's EMIs →</Text>
           </TouchableOpacity>
