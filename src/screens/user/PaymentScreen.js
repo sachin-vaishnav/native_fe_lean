@@ -64,7 +64,11 @@ const PaymentScreen = ({ route, navigation }) => {
       if (response.data.status === 'paid') {
         setShowWebView(false);
         setVerifying(false);
-        showAlert('Payment Successful', 'Your EMI payment has been processed successfully!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+        navigation.navigate('PaymentSuccess', {
+          amount: emi.totalAmount,
+          emiId: emi._id,
+          loanId: loan._id
+        });
         return true;
       } else if (showError) {
         showAlert('Status Pending', 'Payment is not yet verified. Please wait a moment or check your history.');
@@ -134,13 +138,23 @@ setTimeout(function(){rzp.open();},500);
         await paymentAPI.verifyPayment(msg.data);
         setShowWebView(false);
         setVerifying(false);
-        showAlert('Payment Successful', 'Your EMI has been processed!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+        navigation.navigate('PaymentSuccess', {
+          amount: emi.totalAmount,
+          emiId: emi._id,
+          loanId: loan._id
+        });
       } catch (e) {
         // If API fails, try one last check on status
         const isPaid = await checkPaymentStatus();
         if (!isPaid) {
           setVerifying(false);
           showAlert('Verification Failed', 'We could not verify your payment. If money was deducted, it will be updated shortly.', [{ text: 'OK' }]);
+        } else {
+          navigation.navigate('PaymentSuccess', {
+            amount: emi.totalAmount,
+            emiId: emi._id,
+            loanId: loan._id
+          });
         }
       }
     } else if (msg.type === 'CHECK_STATUS') {
@@ -159,7 +173,11 @@ setTimeout(function(){rzp.open();},500);
       const res = await emiAPI.getEMI(emi._id);
       if (res.data.status === 'paid') {
         setShowWebView(false);
-        showAlert('Payment Successful', 'EMI processed!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+        navigation.navigate('PaymentSuccess', {
+          amount: emi.totalAmount,
+          emiId: emi._id,
+          loanId: loan._id
+        });
       } else {
         showAlert('Cancel Payment?', 'If you have already paid, please wait a moment for verification.', [
           { text: 'Wait', style: 'cancel' },

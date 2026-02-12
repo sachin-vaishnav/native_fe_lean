@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { loanAPI } from '../../services/api';
 import Card from '../../components/Card';
 import EMICard from '../../components/EMICard';
@@ -25,7 +26,8 @@ const LoanDetailsScreen = ({ route, navigation }) => {
 
   const [visiblePendingCount, setVisiblePendingCount] = useState(5);
 
-  const fetchLoanDetails = async () => {
+  const fetchLoanDetails = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const response = await loanAPI.getLoanDetails(loanId);
       setLoan(response.data.loan);
@@ -35,14 +37,16 @@ const LoanDetailsScreen = ({ route, navigation }) => {
       console.error('Error fetching loan details:', error);
       Alert.alert('Error', 'Failed to load loan details');
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchLoanDetails();
-  }, [loanId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchLoanDetails(emis.length === 0);
+    }, [loanId])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

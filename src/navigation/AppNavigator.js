@@ -23,6 +23,7 @@ import ApplyLoanScreen from '../screens/user/ApplyLoanScreen';
 import LoanDetailsScreen from '../screens/user/LoanDetailsScreen';
 import MyLoansScreen from '../screens/user/MyLoansScreen';
 import PaymentScreen from '../screens/user/PaymentScreen';
+import PaymentSuccessScreen from '../screens/user/PaymentSuccessScreen';
 import NotificationScreen from '../screens/user/NotificationScreen';
 import ProfileScreen from '../screens/user/ProfileScreen';
 import EditProfileScreen from '../screens/user/EditProfileScreen';
@@ -294,6 +295,7 @@ const UserStack = () => (
     <Stack.Screen name="EditDocument" component={EditDocumentScreen} options={{ title: 'Edit Document Details' }} />
     <Stack.Screen name="LoanDetails" component={LoanDetailsScreen} options={{ title: 'Loan Details' }} />
     <Stack.Screen name="Payment" component={PaymentScreen} options={{ title: 'Pay EMI' }} />
+    <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} options={{ headerShown: false }} />
   </Stack.Navigator>
 );
 
