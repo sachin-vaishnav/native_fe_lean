@@ -34,6 +34,11 @@ const TodayEMIScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   // Filters
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -55,8 +60,10 @@ const TodayEMIScreen = ({ navigation }) => {
     }
   };
 
-  const fetchData = async (showFullLoading = true) => {
-    if (showFullLoading) setLoading(true);
+  const fetchData = async (pageNum = 1, isLoadMore = false) => {
+    if (isLoadMore) setLoadingMore(true);
+    else if (pageNum === 1) setLoading(true);
+
     try {
       let statusParams = [];
       if (activeTab === 'collections') statusParams = ['paid'];
@@ -66,6 +73,8 @@ const TodayEMIScreen = ({ navigation }) => {
       const params = {
         status: statusParams,
         userIds: selectedUserIds.join(','),
+        page: pageNum,
+        limit: 20
       };
 
       if (activeTab === 'today') {
@@ -81,27 +90,45 @@ const TodayEMIScreen = ({ navigation }) => {
       }
 
       const res = await adminAPI.getEMIs(params);
-      setEmis(res.data.emis);
+
+      if (isLoadMore) {
+        setEmis(prev => [...prev, ...res.data.emis]);
+      } else {
+        setEmis(res.data.emis);
+      }
+
       setSummary(res.data.summary);
+      setHasMore(res.data.pagination.page < res.data.pagination.pages);
+      setPage(res.data.pagination.page);
+
     } catch (error) {
       console.error('Error fetching data:', error);
       Alert.alert('Error', 'Failed to load EMIs');
     } finally {
-      if (showFullLoading) setLoading(false);
+      setLoading(false);
+      setLoadingMore(false);
       setRefreshing(false);
     }
   };
 
   useFocusEffect(
     useCallback(() => {
-      fetchData();
+      setPage(1);
+      fetchData(1);
       fetchUsers();
     }, [activeTab, startDate, endDate, selectedUserIds])
   );
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchData(false);
+    setPage(1);
+    fetchData(1);
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchData(page + 1, true);
+    }
   };
 
   const handleMarkPaid = (emiId) => {
@@ -344,6 +371,18 @@ const TodayEMIScreen = ({ navigation }) => {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
+          ListFooterComponent={() => (
+            hasMore ? (
+              <View style={styles.footerLoader}>
+                <Button
+                  title={loadingMore ? "Loading..." : "Load More (20)"}
+                  onPress={handleLoadMore}
+                  loading={loadingMore}
+                  variant="outline"
+                />
+              </View>
+            ) : null
+          )}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="receipt-outline" size={60} color={colors.border} />
@@ -672,6 +711,11 @@ const styles = StyleSheet.create({
   modalBtnTextPrimary: {
     color: colors.white,
     fontWeight: fontWeight.bold,
+  },
+  footerLoader: {
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
   },
 });
 

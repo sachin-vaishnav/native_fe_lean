@@ -183,13 +183,13 @@ const AdminHomeScreen = ({ navigation }) => {
         </View>
 
         {/* Pending Loan Applications */}
-        {dashboard?.recentApplications?.length > 0 && (
+        {dashboard?.pendingApplications?.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Pending Loan Applications</Text>
-            {dashboard.recentApplications.map((loan) => (
+            <Text style={styles.sectionTitle}>Pending Applications ({dashboard.pendingApplications.length})</Text>
+            {dashboard.pendingApplications.map((loan) => (
               <TouchableOpacity
                 key={loan._id}
-                style={styles.applicationCard}
+                style={[styles.applicationCard, styles.pendingBorder]}
                 onPress={() => handleReviewLoan(loan)}
               >
                 <View style={styles.applicationHeader}>
@@ -200,11 +200,67 @@ const AdminHomeScreen = ({ navigation }) => {
                     <Text style={styles.pendingText}>PENDING</Text>
                   </View>
                 </View>
-                <Text style={styles.applicationName}>{loan.applicantName}</Text>
+                <Text style={styles.applicationName}>{loan.applicantName || loan.userId?.name}</Text>
                 <Text style={styles.applicationMobile}>
-                  {loan.applicantMobile}
+                  {loan.applicantMobile || loan.userId?.mobile}
                 </Text>
                 <Text style={styles.reviewText}>Tap to Review →</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Active Loans */}
+        {dashboard?.activeLoans?.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Active Loans ({dashboard.activeLoans.length})</Text>
+            {dashboard.activeLoans.map((loan) => (
+              <TouchableOpacity
+                key={loan._id}
+                style={[styles.applicationCard, styles.activeBorder]}
+                onPress={() => navigation.navigate('AdminLoanDetail', { loanId: loan._id })}
+              >
+                <View style={styles.applicationHeader}>
+                  <Text style={[styles.applicationAmount, { color: colors.success }]}>
+                    {formatCurrency(loan.amount)}
+                  </Text>
+                  <View style={styles.activeBadge}>
+                    <Text style={styles.activeText}>ACTIVE</Text>
+                  </View>
+                </View>
+                <Text style={styles.applicationName}>{loan.applicantName || loan.userId?.name}</Text>
+                <Text style={styles.applicationMobile}>
+                  Balance: {formatCurrency(loan.remainingBalance)}
+                </Text>
+                <Text style={styles.detailsBtnText}>View Details →</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Rejected Loans */}
+        {dashboard?.rejectedApplications?.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Rejected Applications ({dashboard.rejectedApplications.length})</Text>
+            {dashboard.rejectedApplications.map((loan) => (
+              <TouchableOpacity
+                key={loan._id}
+                style={[styles.applicationCard, styles.rejectedBorder]}
+                onPress={() => navigation.navigate('AdminLoanDetail', { loanId: loan._id })}
+              >
+                <View style={styles.applicationHeader}>
+                  <Text style={[styles.applicationAmount, { color: colors.error }]}>
+                    {formatCurrency(loan.amount)}
+                  </Text>
+                  <View style={styles.rejectedBadge}>
+                    <Text style={styles.rejectedText}>REJECTED</Text>
+                  </View>
+                </View>
+                <Text style={styles.applicationName}>{loan.applicantName || loan.userId?.name}</Text>
+                <Text style={styles.applicationMobile}>
+                  Reason: {loan.rejectionReason || 'No reason specified'}
+                </Text>
+                <Text style={styles.detailsBtnText}>View Details →</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -376,7 +432,15 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
+  },
+  pendingBorder: {
     borderLeftColor: colors.warning,
+  },
+  activeBorder: {
+    borderLeftColor: colors.success,
+  },
+  rejectedBorder: {
+    borderLeftColor: colors.error,
   },
   applicationHeader: {
     flexDirection: 'row',
@@ -400,6 +464,28 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
     color: colors.warning,
   },
+  activeBadge: {
+    backgroundColor: colors.successLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+  },
+  activeText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: colors.success,
+  },
+  rejectedBadge: {
+    backgroundColor: colors.errorLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+  },
+  rejectedText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: colors.error,
+  },
   applicationName: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
@@ -411,6 +497,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   reviewText: {
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    fontWeight: fontWeight.medium,
+    marginTop: spacing.md,
+    textAlign: 'right',
+  },
+  detailsBtnText: {
     fontSize: fontSize.sm,
     color: colors.primary,
     fontWeight: fontWeight.medium,

@@ -21,8 +21,14 @@ const LoanDetailsScreen = ({ route, navigation }) => {
   const [loan, setLoan] = useState(null);
   const [stats, setStats] = useState(null);
   const [emis, setEmis] = useState([]);
+  const [paidEmis, setPaidEmis] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Paid EMIs Pagination
+  const [paidPage, setPaidPage] = useState(1);
+  const [hasMorePaid, setHasMorePaid] = useState(false);
+  const [loadingMorePaid, setLoadingMorePaid] = useState(false);
 
   const [visiblePendingCount, setVisiblePendingCount] = useState(5);
 
@@ -32,7 +38,14 @@ const LoanDetailsScreen = ({ route, navigation }) => {
       const response = await loanAPI.getLoanDetails(loanId);
       setLoan(response.data.loan);
       setStats(response.data.stats);
-      setEmis(response.data.emis || []);
+
+      // Separate EMIs
+      const allEmis = response.data.emis || [];
+      const pending = allEmis.filter(e => e.status !== 'paid');
+      setEmis(pending);
+
+      // Initial fetch of paid EMIs (10 at a time)
+      fetchPaidEMIs(1, false);
     } catch (error) {
       console.error('Error fetching loan details:', error);
       Alert.alert('Error', 'Failed to load loan details');
@@ -42,9 +55,27 @@ const LoanDetailsScreen = ({ route, navigation }) => {
     }
   };
 
+  const fetchPaidEMIs = async (page = 1, isLoadMore = false) => {
+    if (isLoadMore) setLoadingMorePaid(true);
+    try {
+      const response = await loanAPI.getLoanEMIs(loanId, { status: 'paid', page, limit: 10 });
+      if (isLoadMore) {
+        setPaidEmis(prev => [...prev, ...response.data.emis]);
+      } else {
+        setPaidEmis(response.data.emis);
+      }
+      setHasMorePaid(response.data.pagination.page < response.data.pagination.pages);
+      setPaidPage(response.data.pagination.page);
+    } catch (e) {
+      console.error('Error fetching paid EMIs:', e);
+    } finally {
+      setLoadingMorePaid(false);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
-      fetchLoanDetails(emis.length === 0);
+      fetchLoanDetails(loan === null);
     }, [loanId])
   );
 
@@ -110,8 +141,8 @@ const LoanDetailsScreen = ({ route, navigation }) => {
   }
 
   // Filter EMIs
-  const pendingEmis = emis.filter(e => e.status !== 'paid').sort((a, b) => a.dayNumber - b.dayNumber);
-  const paidEmis = emis.filter(e => e.status === 'paid').sort((a, b) => b.dayNumber - a.dayNumber);
+  const pendingEmis = emis.sort((a, b) => a.dayNumber - b.dayNumber);
+  // paidEmis is now handled by state and paginated fetch
 
   const displayPending = pendingEmis.slice(0, visiblePendingCount);
   const hasMorePending = pendingEmis.length > visiblePendingCount;
@@ -257,7 +288,7 @@ const LoanDetailsScreen = ({ route, navigation }) => {
         {/* Paid EMIs Section */}
         {paidEmis.length > 0 && (
           <View style={[styles.emisSection, styles.paidEmisSection]}>
-            <Text style={styles.sectionTitle}>Paid EMIs</Text>
+            <Text style={styles.sectionTitle}>Paid EMIs ({stats?.totalPaidCount || paidEmis.length})</Text>
             {paidEmis.map((emi) => (
               <EMICard
                 key={emi._id}
@@ -266,6 +297,18 @@ const LoanDetailsScreen = ({ route, navigation }) => {
                 showPaidAt
               />
             ))}
+
+            {hasMorePaid && (
+              <TouchableOpacity
+                style={[styles.loadMoreBtn, styles.paidLoadMore]}
+                onPress={() => fetchPaidEMIs(paidPage + 1, true)}
+                disabled={loadingMorePaid}
+              >
+                <Text style={styles.loadMoreText}>
+                  {loadingMorePaid ? 'Fetching...' : 'Fetch More Paid EMIs'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </ScrollView>
@@ -424,6 +467,11 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: fontWeight.bold,
     fontSize: fontSize.md,
+  },
+  paidLoadMore: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginVertical: spacing.lg,
   },
 });
 

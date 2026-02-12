@@ -76,6 +76,7 @@ export const loanAPI = {
   apply: (data) => api.post('/loan/apply', data),
   getMyLoans: () => api.get('/loan/my-loans'),
   getLoanDetails: (id) => api.get(`/loan/${id}`),
+  getLoanEMIs: (loanId, params) => api.get(`/emi/loan/${loanId}`, { params }),
 };
 
 // EMI APIs
