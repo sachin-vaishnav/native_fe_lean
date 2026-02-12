@@ -116,6 +116,7 @@ export const adminAPI = {
   processOverdues: () => api.post('/admin/process-overdues'),
   getTodayEMIs: () => api.get('/admin/emis/today'),
   getTotalEMIs: () => api.get('/admin/emis/total'),
+  getEMIs: (params) => api.get('/admin/emis', { params }),
   markEMIPaid: (emiId) => api.put(`/admin/emis/${emiId}/mark-paid`),
 };
 
