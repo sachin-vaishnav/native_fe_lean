@@ -341,28 +341,106 @@ const TodayEMIScreen = ({ navigation, route }) => {
         </View>
       )}
 
-      {/* Basic Date Picker Modal */}
-      <Modal visible={showDatePickerModal} transparent animationType="fade">
+      {/* Custom Calendar Date Picker Modal */}
+      <Modal visible={showDatePickerModal} transparent animationType="slide">
         <View style={styles.modalBg}>
-          <Card style={styles.dateModal}>
-            <Text style={styles.modalTitle}>Set {pickingDateFor === 'start' ? 'Start' : 'End'} Date</Text>
-            <Text style={styles.modalSub}>Type in YYYY-MM-DD format</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={tempDate}
-              onChangeText={setTempDate}
-              placeholder="2024-12-31"
-              autoFocus
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity onPress={() => setShowDatePickerModal(false)} style={styles.modalBtn}>
-                <Text style={styles.modalBtnTextCancel}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={saveDate} style={[styles.modalBtn, styles.modalBtnPrimary]}>
-                <Text style={styles.modalBtnTextPrimary}>Set Date</Text>
+          <View style={styles.calendarCard}>
+            <View style={styles.calendarHeader}>
+              <Text style={styles.calendarTitle}>
+                {pickingDateFor === 'start' ? 'Start Date' : 'End Date'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowDatePickerModal(false)}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
-          </Card>
+
+            {/* Month/Year Selector */}
+            <View style={styles.monthSelector}>
+              <TouchableOpacity
+                onPress={() => {
+                  const d = new Date(tempDate || new Date());
+                  d.setMonth(d.getMonth() - 1);
+                  setTempDate(d.toISOString().split('T')[0]);
+                }}
+              >
+                <Ionicons name="chevron-back" size={24} color={colors.primary} />
+              </TouchableOpacity>
+
+              <Text style={styles.currentMonth}>
+                {new Date(tempDate || new Date()).toLocaleString('default', { month: 'long', year: 'numeric' })}
+              </Text>
+
+              <TouchableOpacity
+                onPress={() => {
+                  const d = new Date(tempDate || new Date());
+                  d.setMonth(d.getMonth() + 1);
+                  setTempDate(d.toISOString().split('T')[0]);
+                }}
+              >
+                <Ionicons name="chevron-forward" size={24} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Day Headers */}
+            <View style={styles.daysHeader}>
+              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                <Text key={day} style={styles.dayHeadText}>{day}</Text>
+              ))}
+            </View>
+
+            {/* Calendar Grid */}
+            <View style={styles.calendarGrid}>
+              {(() => {
+                const date = new Date(tempDate || new Date());
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const days = [];
+
+                // Empty slots for previous month
+                for (let i = 0; i < firstDay; i++) {
+                  days.push(<View key={`empty-${i}`} style={styles.daySlot} />);
+                }
+
+                // Days of current month
+                for (let i = 1; i <= daysInMonth; i++) {
+                  const currentDayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                  const isSelected = tempDate === currentDayStr;
+                  const isToday = new Date().toISOString().split('T')[0] === currentDayStr;
+
+                  days.push(
+                    <TouchableOpacity
+                      key={i}
+                      style={[
+                        styles.daySlot,
+                        isSelected && styles.selectedDaySlot,
+                        isToday && !isSelected && styles.todaySlot
+                      ]}
+                      onPress={() => setTempDate(currentDayStr)}
+                    >
+                      <Text style={[
+                        styles.dayText,
+                        isSelected && styles.selectedDayText,
+                        isToday && !isSelected && styles.todayText
+                      ]}>{i}</Text>
+                    </TouchableOpacity>
+                  );
+                }
+
+                return days;
+              })()}
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnPrimaryFull]}
+                onPress={saveDate}
+              >
+                <Text style={styles.modalBtnTextPrimary}>Confirm Date</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
 
@@ -672,49 +750,97 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.xl,
   },
-  dateModal: {
-    padding: spacing.xl,
-    borderRadius: borderRadius.xl,
+  calendarCard: {
+    backgroundColor: colors.white,
+    padding: spacing.lg,
+    borderRadius: borderRadius.xxl || 24,
+    width: '100%',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  modalTitle: {
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  calendarTitle: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
-    textAlign: 'center',
-    marginBottom: spacing.xs,
+    color: colors.text,
   },
-  modalSub: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-  },
-  modalInput: {
-    borderBottomWidth: 2,
-    borderBottomColor: colors.primary,
-    fontSize: 24,
-    textAlign: 'center',
+  monthSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundSecondary,
     padding: spacing.sm,
-    marginBottom: spacing.xl,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.lg,
+  },
+  currentMonth: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.primary,
+  },
+  daysHeader: {
+    flexDirection: 'row',
+    marginBottom: spacing.sm,
+  },
+  dayHeadText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: fontWeight.bold,
+    color: colors.textLight,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  daySlot: {
+    width: `${100 / 7}%`,
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: borderRadius.md,
+  },
+  selectedDaySlot: {
+    backgroundColor: colors.primary,
+  },
+  todaySlot: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  dayText: {
+    fontSize: fontSize.sm,
+    color: colors.text,
+  },
+  selectedDayText: {
+    color: colors.white,
+    fontWeight: fontWeight.bold,
+  },
+  todayText: {
     color: colors.primary,
     fontWeight: fontWeight.bold,
   },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  modalBtn: {
-    flex: 1,
+  modalBtnPrimaryFull: {
+    backgroundColor: colors.primary,
+    width: '100%',
+    borderRadius: borderRadius.lg,
     padding: spacing.md,
     alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  modalActions: {
+    marginTop: spacing.md,
   },
   modalBtnPrimary: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.md,
-    marginLeft: spacing.md,
-  },
-  modalBtnTextCancel: {
-    color: colors.textSecondary,
-    fontWeight: fontWeight.bold,
   },
   modalBtnTextPrimary: {
     color: colors.white,
