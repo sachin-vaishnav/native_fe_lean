@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -85,14 +86,22 @@ const AdminNotificationScreen = ({ navigation }) => {
           <Text style={[styles.filterText, filter === 'pending' && styles.filterTextActive]}>Pending</Text>
         </TouchableOpacity>
       </View>
-      <FlatList
-        data={list}
-        keyExtractor={(i) => i._id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.empty}>No notifications</Text></View>}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchNotifications} />}
-      />
+
+      {loading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loaderText}>Loading notifications...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={list}
+          keyExtractor={(i) => i._id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.empty}>No notifications</Text></View>}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchNotifications} />}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -116,6 +125,8 @@ const styles = StyleSheet.create({
   date: { fontSize: fontSize.xs, color: colors.textLight },
   emptyContainer: { padding: spacing.xl, alignItems: 'center' },
   empty: { color: colors.textSecondary, fontSize: fontSize.md },
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loaderText: { marginTop: spacing.md, color: colors.textSecondary, fontSize: fontSize.sm },
 });
 
 export default AdminNotificationScreen;
