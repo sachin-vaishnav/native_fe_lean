@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -16,6 +17,9 @@ import { adminAPI } from '../../services/api';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../styles/theme';
+
+const { width } = Dimensions.get('window');
+const actionButtonPadding = width > 400 ? 16 : 14;
 
 const showAlert = (title, message, buttons) => {
   if (Platform.OS === 'web') {
@@ -350,6 +354,7 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     marginHorizontal: spacing.xs,
+    paddingHorizontal: actionButtonPadding,
   },
   section: {
     marginBottom: spacing.lg,

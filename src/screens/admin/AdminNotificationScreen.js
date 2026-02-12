@@ -15,7 +15,7 @@ import Card from '../../components/Card';
 import { colors, spacing, fontSize } from '../../styles/theme';
 
 const AdminNotificationScreen = ({ navigation }) => {
-  const { refreshUnreadCount } = useNotifications();
+  const { unreadCount, refreshUnreadCount } = useNotifications();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState(null);
@@ -35,9 +35,20 @@ const AdminNotificationScreen = ({ navigation }) => {
     setLoading(true);
     fetchNotifications();
     refreshUnreadCount();
-  }, [filter, refreshUnreadCount]));
+  }, [filter, unreadCount])); // Refresh when unreadCount changes (socket update)
 
   const onNotificationPress = async (item) => {
+    // Mark read locally first for instant feedback
+    if (!item.read) {
+      try {
+        await notificationAPI.markRead(item._id);
+        setList(prev => prev.map(n => n._id === item._id ? { ...n, read: true } : n));
+        refreshUnreadCount();
+      } catch (e) {
+        console.error('Error marking read:', e);
+      }
+    }
+
     const lid = item.loanId?._id || item.loanId;
     if (!lid) return;
     if (item.type === 'loan_request') {
@@ -49,11 +60,14 @@ const AdminNotificationScreen = ({ navigation }) => {
 
   const renderItem = ({ item }) => (
     <TouchableOpacity onPress={() => onNotificationPress(item)} activeOpacity={0.7}>
-      <Card style={[styles.item, !item.read && styles.unread]}>
-        <Text style={styles.title}>{item.title || item.type}</Text>
-        <Text style={styles.body} numberOfLines={2}>{item.body}</Text>
-        {item.userId?.name && <Text style={styles.user}>User: {item.userId.name}</Text>}
-        <Text style={styles.date}>{new Date(item.createdAt).toLocaleString('en-IN')}</Text>
+      <Card style={[styles.item, item.read && styles.readItem]}>
+        {!item.read && <View style={styles.unreadDot} />}
+        <View style={styles.content}>
+          <Text style={[styles.title, item.read && styles.readText]}>{item.title || item.type}</Text>
+          <Text style={[styles.body, item.read && styles.readText]} numberOfLines={2}>{item.body}</Text>
+          {item.userId?.name && <Text style={styles.user}>User: {item.userId.name}</Text>}
+          <Text style={styles.date}>{new Date(item.createdAt).toLocaleString('en-IN')}</Text>
+        </View>
       </Card>
     </TouchableOpacity>
   );
@@ -76,7 +90,7 @@ const AdminNotificationScreen = ({ navigation }) => {
         keyExtractor={(i) => i._id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<Card><Text style={styles.empty}>No notifications</Text></Card>}
+        ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.empty}>No notifications</Text></View>}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchNotifications} />}
       />
     </SafeAreaView>
@@ -86,18 +100,22 @@ const AdminNotificationScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   filterRow: { flexDirection: 'row', padding: spacing.md, gap: spacing.sm },
-  filterBtn: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 8, backgroundColor: colors.surface },
-  filterActive: { backgroundColor: colors.primary },
-  filterText: { fontSize: fontSize.sm, color: colors.text },
+  filterBtn: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  filterActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: '500' },
   filterTextActive: { color: colors.textOnPrimary },
   list: { padding: spacing.md },
-  item: { marginBottom: spacing.sm },
-  unread: { borderLeftWidth: 4, borderLeftColor: colors.primary },
-  title: { fontSize: fontSize.md, fontWeight: '600', color: colors.text },
-  body: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 4 },
-  user: { fontSize: fontSize.xs, color: colors.primary, marginTop: 4 },
-  date: { fontSize: fontSize.xs, color: colors.textLight, marginTop: 4 },
-  empty: { textAlign: 'center', color: colors.textSecondary },
+  item: { marginBottom: spacing.sm, flexDirection: 'row', alignItems: 'flex-start', padding: spacing.md },
+  readItem: { backgroundColor: colors.backgroundSecondary, opacity: 0.8 }, // Light background for read items
+  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error, marginTop: 6, marginRight: spacing.sm },
+  content: { flex: 1 },
+  title: { fontSize: fontSize.md, fontWeight: '600', color: colors.text, marginBottom: 2 },
+  body: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: 4 },
+  readText: { color: colors.textLight },
+  user: { fontSize: fontSize.xs, color: colors.primary, fontWeight: '500', marginBottom: 2 },
+  date: { fontSize: fontSize.xs, color: colors.textLight },
+  emptyContainer: { padding: spacing.xl, alignItems: 'center' },
+  empty: { color: colors.textSecondary, fontSize: fontSize.md },
 });
 
 export default AdminNotificationScreen;

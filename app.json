@@ -1,11 +1,14 @@
 {
   "expo": {
-    "name": "Loan App",
-    "slug": "loan-app",
+    "name": "LoanSnap",
+    "slug": "loansnap",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
       "backgroundColor": "#6B46C1"
     },
     "assetBundlePatterns": [
@@ -13,10 +16,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.loanapp.mobile"
+      "bundleIdentifier": "com.loansnap.mobile"
     },
     "android": {
-      "package": "com.loanapp.mobile"
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#6B46C1"
+      },
+      "package": "com.loansnap.mobile"
     },
     "extra": {
       "apiUrl": "https://native-be-lean.onrender.com/api",

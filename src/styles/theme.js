@@ -5,54 +5,54 @@ export const colors = {
   primaryDark: '#553C9A',
   accent: '#E9D5FF',
   accentLight: '#F3E8FF',
-  
+
   background: '#FFFFFF',
   backgroundSecondary: '#F7F7F7',
   surface: '#FFFFFF',
-  
+
   text: '#1A1A2E',
   textSecondary: '#64748B',
   textLight: '#94A3B8',
   textOnPrimary: '#FFFFFF',
-  
+
   success: '#16A34A',
   successLight: '#DCFCE7',
   error: '#DC2626',
   errorLight: '#FEE2E2',
   warning: '#F59E0B',
   warningLight: '#FEF3C7',
-  
+
   border: '#E2E8F0',
   borderLight: '#F1F5F9',
-  
+
   shadow: '#000000',
 };
 
 export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
+  xs: 3,
+  sm: 6,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
 };
 
 export const borderRadius = {
   sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
+  md: 6,
+  lg: 10,
+  xl: 14,
   full: 9999,
 };
 
 export const fontSize = {
-  xs: 12,
-  sm: 14,
-  md: 16,
-  lg: 18,
-  xl: 20,
-  xxl: 24,
-  xxxl: 32,
+  xs: 11,
+  sm: 13,
+  md: 14,
+  lg: 16,
+  xl: 18,
+  xxl: 20,
+  xxxl: 26,
 };
 
 export const fontWeight = {

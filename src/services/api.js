@@ -67,6 +67,7 @@ export const userAPI = {
   updateProfile: (data) => api.put('/user/profile', data, { timeout: 60000 }),
   uploadImage: (imageBase64, folder) => api.post('/user/upload-image', { image: imageBase64, folder }, { timeout: 30000 }),
   getDashboard: () => api.get('/user/dashboard'),
+  savePushToken: (token) => api.post('/user/push-token', { token }),
 };
 
 // Loan APIs
