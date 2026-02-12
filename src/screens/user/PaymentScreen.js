@@ -41,30 +41,40 @@ const PaymentScreen = ({ route, navigation }) => {
   const [checkoutHtml, setCheckoutHtml] = useState('');
   const [paymentData, setPaymentData] = useState(null);
   const [checkingStatus, setCheckingStatus] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const webViewRef = useRef(null);
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', nextAppState => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active' && showWebView && paymentData) {
-        setTimeout(() => checkPaymentStatus(), 2000);
+        // Reduced delay to match real user return speed
+        setTimeout(() => checkPaymentStatus(), 1500);
       }
       appState.current = nextAppState;
     });
     return () => sub?.remove();
   }, [showWebView, paymentData]);
 
-  const checkPaymentStatus = async () => {
+  const checkPaymentStatus = async (showError = false) => {
     if (checkingStatus) return;
     setCheckingStatus(true);
     try {
       const response = await emiAPI.getEMI(emi._id);
       if (response.data.status === 'paid') {
         setShowWebView(false);
+        setVerifying(false);
         showAlert('Payment Successful', 'Your EMI payment has been processed successfully!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+        return true;
+      } else if (showError) {
+        showAlert('Status Pending', 'Payment is not yet verified. Please wait a moment or check your history.');
       }
-    } catch (e) {}
-    setCheckingStatus(false);
+    } catch (e) {
+      if (showError) showAlert('Error', 'Could not verify payment status.');
+    } finally {
+      setCheckingStatus(false);
+    }
+    return false;
   };
 
   const formatCurrency = (amount) => `₹${amount?.toLocaleString('en-IN') || 0}`;
@@ -117,17 +127,33 @@ setTimeout(function(){rzp.open();},500);
   const handleWebViewMessage = async (event) => {
     let msg;
     try { msg = JSON.parse(event.nativeEvent.data); } catch { return; }
+
     if (msg.type === 'PAYMENT_SUCCESS') {
+      setVerifying(true);
       try {
         await paymentAPI.verifyPayment(msg.data);
         setShowWebView(false);
+        setVerifying(false);
         showAlert('Payment Successful', 'Your EMI has been processed!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
-      } catch (e) { checkPaymentStatus(); }
-    } else if (msg.type === 'CHECK_STATUS') { checkPaymentStatus(); }
-    else if (msg.type === 'PAYMENT_FAILED') { setShowWebView(false); showAlert('Failed', msg.error?.description || 'Payment failed'); }
+      } catch (e) {
+        // If API fails, try one last check on status
+        const isPaid = await checkPaymentStatus();
+        if (!isPaid) {
+          setVerifying(false);
+          showAlert('Verification Failed', 'We could not verify your payment. If money was deducted, it will be updated shortly.', [{ text: 'OK' }]);
+        }
+      }
+    } else if (msg.type === 'CHECK_STATUS') {
+      checkPaymentStatus();
+    } else if (msg.type === 'PAYMENT_FAILED') {
+      setShowWebView(false);
+      showAlert('Payment Failed', msg.error?.description || 'Please try again.');
+    }
   };
 
   const handleCloseWebView = async () => {
+    if (verifying) return; // Don't allow closing while verifying
+
     setCheckingStatus(true);
     try {
       const res = await emiAPI.getEMI(emi._id);
@@ -135,9 +161,14 @@ setTimeout(function(){rzp.open();},500);
         setShowWebView(false);
         showAlert('Payment Successful', 'EMI processed!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
       } else {
-        showAlert('Close?', 'Payment may not be complete.', [{ text: 'Continue', style: 'cancel' }, { text: 'Close', onPress: () => setShowWebView(false) }]);
+        showAlert('Cancel Payment?', 'If you have already paid, please wait a moment for verification.', [
+          { text: 'Wait', style: 'cancel' },
+          { text: 'Close Anyway', onPress: () => setShowWebView(false), style: 'destructive' }
+        ]);
       }
-    } catch { setShowWebView(false); }
+    } catch {
+      setShowWebView(false);
+    }
     setCheckingStatus(false);
   };
 
@@ -174,13 +205,44 @@ setTimeout(function(){rzp.open();},500);
       </ScrollView>
 
       <Modal visible={showWebView} animationType="slide" onRequestClose={handleCloseWebView}>
-        <SafeAreaView style={styles.webViewContainer} edges={['top']}>
+        <SafeAreaView style={styles.container} edges={['top']}>
           <View style={styles.webViewHeader}>
-            <Button title={checkingStatus ? "..." : "Cancel"} onPress={handleCloseWebView} variant="outline" size="small" disabled={checkingStatus} />
-            <Text style={styles.webViewTitle}>Payment</Text>
-            <View style={{ width: 80 }} />
+            <TouchableOpacity
+              onPress={handleCloseWebView}
+              disabled={verifying}
+              style={[styles.closeBtn, verifying && { opacity: 0.5 }]}
+            >
+              <Text style={styles.closeBtnText}>{verifying ? "Verifying..." : "Cancel"}</Text>
+            </TouchableOpacity>
+            <Text style={styles.webViewTitle}>Secure Payment</Text>
+            <View style={{ width: 60 }} />
           </View>
-          {checkoutHtml ? <WebView ref={webViewRef} source={{ html: checkoutHtml }} onMessage={handleWebViewMessage} javaScriptEnabled domStorageEnabled mixedContentMode="always" /> : <View style={styles.webViewLoading}><ActivityIndicator size="large" color={colors.primary} /></View>}
+
+          <View style={{ flex: 1, position: 'relative' }}>
+            {checkoutHtml ? (
+              <WebView
+                ref={webViewRef}
+                source={{ html: checkoutHtml }}
+                onMessage={handleWebViewMessage}
+                javaScriptEnabled
+                domStorageEnabled
+                mixedContentMode="always"
+              />
+            ) : (
+              <View style={styles.webViewLoading}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ marginTop: 10 }}>Loading Checkout...</Text>
+              </View>
+            )}
+
+            {verifying && (
+              <View style={styles.verifyingOverlay}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text style={styles.verifyingText}>Verifying Payment...</Text>
+                <Text style={styles.verifyingSubtext}>Please do not close or go back</Text>
+              </View>
+            )}
+          </View>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -215,10 +277,38 @@ const styles = StyleSheet.create({
   paidBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.successLight, padding: spacing.md, borderRadius: borderRadius.md },
   paidIcon: { fontSize: 24, color: colors.success, marginRight: spacing.sm },
   paidText: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.success },
-  webViewContainer: { flex: 1, backgroundColor: colors.background },
-  webViewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: spacing.lg, paddingTop: spacing.xl, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.background },
-  webViewTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.text },
+  webViewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.background
+  },
+  webViewTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text },
   webViewLoading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  closeBtn: { padding: spacing.sm },
+  closeBtnText: { color: colors.error, fontWeight: fontWeight.semibold, fontSize: fontSize.md },
+  verifyingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  verifyingText: {
+    color: '#fff',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    marginTop: 20,
+  },
+  verifyingSubtext: {
+    color: '#ccc',
+    fontSize: fontSize.sm,
+    marginTop: 8,
+  },
 });
 
 export default PaymentScreen;
