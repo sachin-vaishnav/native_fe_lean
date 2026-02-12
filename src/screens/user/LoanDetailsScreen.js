@@ -23,6 +23,8 @@ const LoanDetailsScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [visiblePendingCount, setVisiblePendingCount] = useState(5);
+
   const fetchLoanDetails = async () => {
     try {
       const response = await loanAPI.getLoanDetails(loanId);
@@ -79,6 +81,10 @@ const LoanDetailsScreen = ({ route, navigation }) => {
     navigation.navigate('Payment', { emi, loan });
   };
 
+  const handleLoadMore = () => {
+    setVisiblePendingCount(prev => prev + 5);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -98,6 +104,13 @@ const LoanDetailsScreen = ({ route, navigation }) => {
       </SafeAreaView>
     );
   }
+
+  // Filter EMIs
+  const pendingEmis = emis.filter(e => e.status !== 'paid').sort((a, b) => a.dayNumber - b.dayNumber);
+  const paidEmis = emis.filter(e => e.status === 'paid').sort((a, b) => b.dayNumber - a.dayNumber);
+
+  const displayPending = pendingEmis.slice(0, visiblePendingCount);
+  const hasMorePending = pendingEmis.length > visiblePendingCount;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -215,24 +228,40 @@ const LoanDetailsScreen = ({ route, navigation }) => {
           </Card>
         )}
 
-        {/* EMI Schedule - Pending first, then paid */}
-        {emis.length > 0 && (
+        {/* Upcoming EMIs Section */}
+        {pendingEmis.length > 0 && (
           <View style={styles.emisSection}>
-            <Text style={styles.sectionTitle}>EMI Schedule</Text>
-            {[...emis]
-              .sort((a, b) => {
-                if (a.status === 'paid' && b.status !== 'paid') return 1;
-                if (a.status !== 'paid' && b.status === 'paid') return -1;
-                return a.dayNumber - b.dayNumber;
-              })
-              .map((emi) => (
-                <EMICard
-                  key={emi._id}
-                  emi={emi}
-                  onPay={emi.status !== 'paid' ? handlePayEMI : null}
-                  showPaidAt
-                />
-              ))}
+            <Text style={styles.sectionTitle}>Upcoming EMIs</Text>
+            {displayPending.map((emi) => (
+              <EMICard
+                key={emi._id}
+                emi={emi}
+                onPay={handlePayEMI}
+              />
+            ))}
+
+            {hasMorePending && (
+              <TouchableOpacity style={styles.loadMoreBtn} onPress={handleLoadMore}>
+                <Text style={styles.loadMoreText}>
+                  View More ({pendingEmis.length - visiblePendingCount} remaining)
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* Paid EMIs Section */}
+        {paidEmis.length > 0 && (
+          <View style={[styles.emisSection, styles.paidEmisSection]}>
+            <Text style={styles.sectionTitle}>Paid EMIs</Text>
+            {paidEmis.map((emi) => (
+              <EMICard
+                key={emi._id}
+                emi={emi}
+                onPay={null}
+                showPaidAt
+              />
+            ))}
           </View>
         )}
       </ScrollView>
@@ -372,6 +401,25 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
     color: colors.text,
     marginBottom: spacing.md,
+  },
+  paidEmisSection: {
+    marginTop: spacing.xl,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  loadMoreBtn: {
+    padding: spacing.md,
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  loadMoreText: {
+    color: colors.primary,
+    fontWeight: fontWeight.bold,
+    fontSize: fontSize.md,
   },
 });
 
