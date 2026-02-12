@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 
 // Web: Render API. Native: use extra.apiUrl from app.json
 const getBaseUrl = () => {
-  if (Platform.OS === 'web') return 'https://native-be-lean.onrender.com/api';
+  if (Platform.OS === 'web') return 'http://localhost:5001/api';
   const custom = Constants.expoConfig?.extra?.apiUrl;
   if (custom) return custom;
   // Android emulator: 10.0.2.2 = host machine
@@ -59,6 +59,7 @@ export const configAPI = {
 export const authAPI = {
   sendOTP: (email) => api.post('/auth/send-otp', { email }, { timeout: 35000 }),
   verifyOTP: (email, otp) => api.post('/auth/verify-otp', { email, otp }),
+  findEmail: (mobile) => api.post('/auth/find-email', { mobile }),
 };
 
 // User APIs

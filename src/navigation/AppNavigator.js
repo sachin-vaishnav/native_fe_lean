@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { colors, fontSize, fontWeight } from '../styles/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const iconSize = 24;
 
@@ -14,6 +15,7 @@ const iconSize = 24;
 import LoginScreen from '../screens/auth/LoginScreen';
 import OTPScreen from '../screens/auth/OTPScreen';
 import AddMobileScreen from '../screens/auth/AddMobileScreen';
+import FindEmailScreen from '../screens/auth/FindEmailScreen';
 
 // User Screens
 import HomeScreen from '../screens/user/HomeScreen';
@@ -63,45 +65,54 @@ const AlertsTabIcon = ({ focused }) => {
 };
 
 // User Tab Navigator
-const UserTabs = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarStyle: styles.tabBar,
-      tabBarShowLabel: false,
-      tabBarScrollEnabled: true,
-    }}
-  >
-    <Tab.Screen
-      name="HomeTab"
-      component={HomeScreen}
-      options={{
-        tabBarIcon: ({ focused }) => <TabIcon icon="home" iconOutline="home-outline" name="Home" focused={focused} />,
+const UserTabs = () => {
+  const insets = useSafeAreaInsets();
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: 60 + (insets.bottom > 0 ? insets.bottom : 10),
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 8
+          }
+        ],
+        tabBarShowLabel: false,
+        tabBarScrollEnabled: true,
       }}
-    />
-    <Tab.Screen
-      name="LoansTab"
-      component={UserLoansStack}
-      options={{
-        tabBarIcon: ({ focused }) => <TabIcon icon="wallet" iconOutline="wallet-outline" name="Loans" focused={focused} />,
-      }}
-    />
-    <Tab.Screen
-      name="NotificationsTab"
-      component={UserNotificationsStack}
-      options={{
-        tabBarIcon: ({ focused }) => <AlertsTabIcon focused={focused} />,
-      }}
-    />
-    <Tab.Screen
-      name="ProfileTab"
-      component={UserProfileStack}
-      options={{
-        tabBarIcon: ({ focused }) => <TabIcon icon="person" iconOutline="person-outline" name="Profile" focused={focused} />,
-      }}
-    />
-  </Tab.Navigator>
-);
+    >
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeScreen}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon icon="home" iconOutline="home-outline" name="Home" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="LoansTab"
+        component={UserLoansStack}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon icon="wallet" iconOutline="wallet-outline" name="Loans" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="NotificationsTab"
+        component={UserNotificationsStack}
+        options={{
+          tabBarIcon: ({ focused }) => <AlertsTabIcon focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={UserProfileStack}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon icon="person" iconOutline="person-outline" name="Profile" focused={focused} />,
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
 
 // User Profile Stack
 const UserProfileStack = () => (
@@ -148,44 +159,53 @@ const UserLoansStack = () => (
 );
 
 // Admin Tab Navigator
-const AdminTabs = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarStyle: styles.tabBar,
-      tabBarShowLabel: false,
-    }}
-  >
-    <Tab.Screen
-      name="AdminHomeTab"
-      component={AdminHomeScreen}
-      options={{
-        tabBarIcon: ({ focused }) => <TabIcon icon="grid" iconOutline="grid-outline" name="Dashboard" focused={focused} />,
+const AdminTabs = () => {
+  const insets = useSafeAreaInsets();
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: 60 + (insets.bottom > 0 ? insets.bottom : 10),
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 8
+          }
+        ],
+        tabBarShowLabel: false,
       }}
-    />
-    <Tab.Screen
-      name="UsersTab"
-      component={AdminUsersStack}
-      options={{
-        tabBarIcon: ({ focused }) => <TabIcon icon="people" iconOutline="people-outline" name="Users" focused={focused} />,
-      }}
-    />
-    <Tab.Screen
-      name="EMIsTab"
-      component={AdminEMIsStack}
-      options={{
-        tabBarIcon: ({ focused }) => <TabIcon icon="calculator" iconOutline="calculator-outline" name="EMIs" focused={focused} />,
-      }}
-    />
-    <Tab.Screen
-      name="AdminNotificationsTab"
-      component={AdminNotificationsStack}
-      options={{
-        tabBarIcon: ({ focused }) => <AlertsTabIcon focused={focused} />,
-      }}
-    />
-  </Tab.Navigator>
-);
+    >
+      <Tab.Screen
+        name="AdminHomeTab"
+        component={AdminHomeScreen}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon icon="grid" iconOutline="grid-outline" name="Dashboard" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="UsersTab"
+        component={AdminUsersStack}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon icon="people" iconOutline="people-outline" name="Users" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="EMIsTab"
+        component={AdminEMIsStack}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon icon="calculator" iconOutline="calculator-outline" name="EMIs" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="AdminNotificationsTab"
+        component={AdminNotificationsStack}
+        options={{
+          tabBarIcon: ({ focused }) => <AlertsTabIcon focused={focused} />,
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
 
 // Admin Users Stack
 const AdminUsersStack = () => (
@@ -256,6 +276,7 @@ const AuthStack = () => (
   >
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="OTP" component={OTPScreen} />
+    <Stack.Screen name="FindEmail" component={FindEmailScreen} />
   </Stack.Navigator>
 );
 
@@ -338,8 +359,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    height: 70,
-    paddingBottom: 10,
     paddingTop: 10,
   },
   tabIcon: {

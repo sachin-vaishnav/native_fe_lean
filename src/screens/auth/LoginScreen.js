@@ -6,6 +6,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
@@ -99,6 +100,12 @@ const LoginScreen = ({ navigation }) => {
               size="large"
               style={styles.button}
             />
+            <TouchableOpacity
+              onPress={() => navigation.navigate('FindEmail')}
+              style={styles.forgotEmailLink}
+            >
+              <Text style={styles.forgotEmailText}>Forgot Email? Find it here</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.footer}>
@@ -174,6 +181,16 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  forgotEmailLink: {
+    marginTop: spacing.lg,
+    alignItems: 'center',
+  },
+  forgotEmailText: {
+    fontSize: fontSize.md,
+    color: colors.primary,
+    fontWeight: fontWeight.medium,
+    textDecorationLine: 'underline',
   },
 });
 
