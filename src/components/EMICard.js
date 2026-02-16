@@ -2,6 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, spacing, borderRadius, fontSize, fontWeight } from '../styles/theme';
 
+// Penalty per day = 50% of principalAmount
+const getPenaltyBreakdown = (emi) => {
+  if (!emi.penaltyAmount || emi.penaltyAmount <= 0) return null;
+  const penaltyPerDay = Math.ceil((emi.principalAmount || 0) / 2);
+  const daysOverdue = penaltyPerDay > 0 ? Math.round(emi.penaltyAmount / penaltyPerDay) : 0;
+  const baseAmount = (emi.principalAmount || 0) + (emi.interestAmount || 0);
+  return { penaltyPerDay, daysOverdue, baseAmount };
+};
+
 const EMICard = ({ emi, onPay, showLoanInfo = false, showPaidAt = false }) => {
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-IN', {
@@ -82,14 +91,17 @@ const EMICard = ({ emi, onPay, showLoanInfo = false, showPaidAt = false }) => {
           <Text style={styles.amountLabel}>Interest:</Text>
           <Text style={styles.amountValue}>{formatCurrency(emi.interestAmount)}</Text>
         </View>
-        {emi.penaltyAmount > 0 && (
-          <View style={styles.amountRow}>
-            <Text style={[styles.amountLabel, styles.penaltyLabel]}>Penalty:</Text>
-            <Text style={[styles.amountValue, styles.penaltyValue]}>
-              {formatCurrency(emi.penaltyAmount)}
-            </Text>
-          </View>
-        )}
+        {emi.penaltyAmount > 0 && (() => {
+          const bd = getPenaltyBreakdown(emi);
+          return bd && (
+            <View style={styles.amountRow}>
+              <Text style={[styles.amountLabel, styles.penaltyLabel]}>Penalty ({bd.penaltyPerDay} × {bd.daysOverdue} days):</Text>
+              <Text style={[styles.amountValue, styles.penaltyValue]}>
+                {formatCurrency(emi.penaltyAmount)}
+              </Text>
+            </View>
+          );
+        })()}
         <View style={[styles.amountRow, styles.totalRow]}>
           <Text style={styles.totalLabel}>Total:</Text>
           <Text style={styles.totalValue}>{formatCurrency(emi.totalAmount)}</Text>

@@ -27,6 +27,7 @@ const AdminLoanDetailScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(null);
+  const [clearingOverdue, setClearingOverdue] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const [docModal, setDocModal] = useState({ visible: false, uri: null, title: '' });
@@ -71,6 +72,43 @@ const AdminLoanDetailScreen = ({ route, navigation }) => {
               Alert.alert('Error', e.response?.data?.message || 'Failed');
             }
             setMarkingPaid(null);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearOverdue = async (emi) => {
+    Alert.alert(
+      'Clear Overdue Charges',
+      `Remove overdue penalty of ${formatCurrency(emi.penaltyAmount)} for Day ${emi.dayNumber}?\n\nBase EMI (₹${(emi.principalAmount + emi.interestAmount).toLocaleString('en-IN')}) will remain.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          onPress: async () => {
+            setClearingOverdue(emi._id);
+            try {
+              await adminAPI.clearOverdue(emi._id);
+              // Optimistically update local state immediately
+              setEmis(prevEmis => prevEmis.map(e => 
+                e._id === emi._id 
+                  ? { ...e, penaltyAmount: 0, totalAmount: e.principalAmount + e.interestAmount }
+                  : e
+              ));
+              // Also update stats if needed
+              if (stats) {
+                setStats(prevStats => ({
+                  ...prevStats,
+                  totalPenalty: (prevStats.totalPenalty || 0) - (emi.penaltyAmount || 0),
+                }));
+              }
+              // Refresh to ensure consistency
+              fetchDetails();
+            } catch (e) {
+              Alert.alert('Error', e.response?.data?.message || 'Failed');
+            }
+            setClearingOverdue(null);
           },
         },
       ]
@@ -219,10 +257,20 @@ const AdminLoanDetailScreen = ({ route, navigation }) => {
                 <Text style={styles.label}>Total:</Text>
                 <Text style={[styles.value, emi.penaltyAmount > 0 && styles.red]}>{formatCurrency(emi.totalAmount)}</Text>
               </View>
+              {emi.penaltyAmount > 0 && (() => {
+                const penaltyPerDay = Math.ceil((emi.principalAmount || 0) / 2);
+                const daysOverdue = penaltyPerDay > 0 ? Math.round((emi.penaltyAmount || 0) / penaltyPerDay) : 0;
+                return (
+                  <View style={styles.emiRow}>
+                    <Text style={[styles.label, styles.red]}>Penalty ({penaltyPerDay} × {daysOverdue} days):</Text>
+                    <Text style={[styles.value, styles.red]}>{formatCurrency(emi.penaltyAmount)}</Text>
+                  </View>
+                );
+              })()}
               {emi.penaltyAmount > 0 && (
                 <View style={styles.emiRow}>
-                  <Text style={[styles.label, styles.red]}>Late charge:</Text>
-                  <Text style={[styles.value, styles.red]}>{formatCurrency(emi.penaltyAmount)}</Text>
+                  <Text style={styles.label}>Base EMI:</Text>
+                  <Text style={styles.value}>{formatCurrency(emi.principalAmount + emi.interestAmount)}</Text>
                 </View>
               )}
               {emi.status === 'paid' && emi.paidAt && (
@@ -232,13 +280,25 @@ const AdminLoanDetailScreen = ({ route, navigation }) => {
                 </View>
               )}
               {emi.status !== 'paid' && (
-                <Button
-                  title={markingPaid === emi._id ? '...' : 'Mark as Paid'}
-                  onPress={() => handleMarkPaid(emi)}
-                  disabled={!!markingPaid}
-                  size="small"
-                  style={styles.markPaidBtn}
-                />
+                <View style={styles.emiActionRow}>
+                  {emi.penaltyAmount > 0 && (
+                    <Button
+                      title={clearingOverdue === emi._id ? '...' : 'Clear Overdue'}
+                      onPress={() => handleClearOverdue(emi)}
+                      disabled={!!clearingOverdue || !!markingPaid}
+                      variant="outline"
+                      size="small"
+                      style={styles.clearOverdueBtn}
+                    />
+                  )}
+                  <Button
+                    title={markingPaid === emi._id ? '...' : 'Mark as Paid'}
+                    onPress={() => handleMarkPaid(emi)}
+                    disabled={!!markingPaid}
+                    size="small"
+                    style={styles.markPaidBtn}
+                  />
+                </View>
               )}
             </View>
           ))}
@@ -300,7 +360,9 @@ const styles = StyleSheet.create({
   todayBadgeText: { fontSize: 10, color: colors.textOnPrimary, fontWeight: fontWeight.semibold },
   emiRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs },
   emiDay: { fontSize: fontSize.md, fontWeight: fontWeight.semibold },
-  markPaidBtn: { marginTop: spacing.sm },
+  emiActionRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  clearOverdueBtn: { flex: 1, borderColor: colors.warning },
+  markPaidBtn: { flex: 1 },
   deleteBtn: { marginTop: spacing.lg, borderColor: colors.error },
   loadMoreBtn: {
     padding: spacing.md,

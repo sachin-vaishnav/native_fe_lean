@@ -10,6 +10,7 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
@@ -106,9 +107,14 @@ const AdminHomeScreen = ({ navigation }) => {
             <Text style={styles.greeting}>Admin Panel</Text>
             <Text style={styles.userName}>{user?.name || 'Admin'}</Text>
           </View>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity onPress={() => navigation.navigate('AdminSettings')} style={styles.iconButton}>
+              <Ionicons name="settings" size={24} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Quick Stats */}
@@ -132,12 +138,16 @@ const AdminHomeScreen = ({ navigation }) => {
             </Text>
             <Text style={styles.statLabel}>Active Loans</Text>
           </View>
-          <View style={styles.statCard}>
+          <TouchableOpacity
+            style={styles.statCard}
+            onPress={() => navigation.navigate('EMIsTab', { screen: 'TodayEMIs', params: { initialTab: 'overdue' } })}
+          >
             <Text style={[styles.statValue, styles.errorValue]}>
               {stats.overdueEMIs || 0}
             </Text>
             <Text style={styles.statLabel}>Overdue EMIs</Text>
-          </View>
+            <Text style={styles.tapHint}>Tap to view →</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Today's EMIs */}
@@ -306,6 +316,14 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.text,
   },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  iconButton: {
+    padding: spacing.sm,
+  },
   logoutButton: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -360,6 +378,11 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     marginTop: spacing.xs,
+  },
+  tapHint: {
+    fontSize: 10,
+    color: colors.primary,
+    marginTop: 2,
   },
   statLabelWhite: {
     fontSize: fontSize.sm,

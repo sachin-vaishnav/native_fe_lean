@@ -208,7 +208,24 @@ setTimeout(function(){rzp.open();},500);
           <View style={styles.breakdownSection}>
             <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Principal</Text><Text style={styles.breakdownValue}>{formatCurrency(emi.principalAmount)}</Text></View>
             <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Interest</Text><Text style={styles.breakdownValue}>{formatCurrency(emi.interestAmount)}</Text></View>
-            {emi.penaltyAmount > 0 && <View style={styles.breakdownRow}><Text style={[styles.breakdownLabel, styles.penaltyLabel]}>Penalty</Text><Text style={[styles.breakdownValue, styles.penaltyValue]}>{formatCurrency(emi.penaltyAmount)}</Text></View>}
+            {emi.penaltyAmount > 0 && (
+              <View style={styles.breakdownRow}>
+                <Text style={styles.breakdownLabel}>Base EMI (main pay):</Text>
+                <Text style={styles.breakdownValue}>{formatCurrency(emi.principalAmount + emi.interestAmount)}</Text>
+              </View>
+            )}
+            {emi.penaltyAmount > 0 && (() => {
+              const penaltyPerDay = Math.ceil((emi.principalAmount || 0) / 2);
+              const daysOverdue = penaltyPerDay > 0 ? Math.round((emi.penaltyAmount || 0) / penaltyPerDay) : 0;
+              return (
+                <View style={styles.breakdownRow}>
+                  <Text style={[styles.breakdownLabel, styles.penaltyLabel]}>
+                    Penalty ({penaltyPerDay} × {daysOverdue} days):
+                  </Text>
+                  <Text style={[styles.breakdownValue, styles.penaltyValue]}>{formatCurrency(emi.penaltyAmount)}</Text>
+                </View>
+              );
+            })()}
             <View style={[styles.breakdownRow, styles.totalRow]}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>{formatCurrency(emi.totalAmount)}</Text></View>
           </View>
         </Card>

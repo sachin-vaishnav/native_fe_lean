@@ -25,6 +25,10 @@
       },
       "package": "com.loansnap.mobile"
     },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
     "extra": {
       "apiUrl": "https://native-be-lean.onrender.com/api",
       "eas": {

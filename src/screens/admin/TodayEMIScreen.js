@@ -53,6 +53,8 @@ const TodayEMIScreen = ({ navigation, route }) => {
   const [selectedUserIds, setSelectedUserIds] = useState([]);
 
   // UI States
+  const [markingPaid, setMarkingPaid] = useState(null);
+  const [clearingOverdue, setClearingOverdue] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showDatePickerModal, setShowDatePickerModal] = useState(false);
@@ -148,12 +150,47 @@ const TodayEMIScreen = ({ navigation, route }) => {
         {
           text: 'Confirm',
           onPress: async () => {
+            setMarkingPaid(emiId);
             try {
               await adminAPI.markEMIPaid(emiId);
               Alert.alert('Success', 'EMI marked as paid');
               fetchData(1);
             } catch (e) {
               Alert.alert('Error', e.response?.data?.message || 'Failed to update');
+            } finally {
+              setMarkingPaid(null);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleClearOverdue = async (item) => {
+    Alert.alert(
+      'Clear Overdue',
+      `Remove ₹${(item.penaltyAmount || 0).toLocaleString('en-IN')} overdue charges? Payable will be base EMI only.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          onPress: async () => {
+            setClearingOverdue(item._id);
+            try {
+              await adminAPI.clearOverdue(item._id);
+              // Optimistically update local state immediately
+              setEmis(prevEmis => prevEmis.map(e => 
+                e._id === item._id 
+                  ? { ...e, penaltyAmount: 0, totalAmount: (e.principalAmount || 0) + (e.interestAmount || 0) }
+                  : e
+              ));
+              Alert.alert('Success', 'Overdue charges cleared');
+              // Refresh to ensure consistency
+              fetchData(1);
+            } catch (e) {
+              Alert.alert('Error', e.response?.data?.message || 'Failed to clear overdue');
+            } finally {
+              setClearingOverdue(null);
             }
           }
         }
@@ -192,7 +229,7 @@ const TodayEMIScreen = ({ navigation, route }) => {
   };
 
   const renderEMIItem = ({ item }) => (
-    <Card style={styles.emiCard}>
+    <Card style={[styles.emiCard, item.penaltyAmount > 0 && styles.emiCardPenalty]}>
       <View style={styles.emiHeader}>
         <View style={styles.userSection}>
           <Text style={styles.userName}>{item.userId?.name || 'Unknown'}</Text>
@@ -208,8 +245,26 @@ const TodayEMIScreen = ({ navigation, route }) => {
       <View style={styles.emiInfo}>
         <View style={styles.emiRow}>
           <Text style={styles.emiLabel}>Amount:</Text>
-          <Text style={styles.emiValue}>{formatCurrency(item.totalAmount)}</Text>
+          <Text style={[styles.emiValue, item.penaltyAmount > 0 && styles.penaltyValue]}>{formatCurrency(item.totalAmount)}</Text>
         </View>
+        {item.penaltyAmount > 0 && (
+          <>
+            <View style={styles.emiRow}>
+              <Text style={styles.emiLabel}>Base EMI:</Text>
+              <Text style={styles.emiValue}>{formatCurrency((item.principalAmount || 0) + (item.interestAmount || 0))}</Text>
+            </View>
+            {(() => {
+              const penaltyPerDay = Math.ceil((item.principalAmount || 0) / 2);
+              const daysOverdue = penaltyPerDay > 0 ? Math.round((item.penaltyAmount || 0) / penaltyPerDay) : 0;
+              return (
+                <View style={styles.emiRow}>
+                  <Text style={[styles.emiLabel, styles.penaltyText]}>Penalty ({penaltyPerDay} × {daysOverdue} days):</Text>
+                  <Text style={[styles.emiValue, styles.penaltyText]}>{formatCurrency(item.penaltyAmount)}</Text>
+                </View>
+              );
+            })()}
+          </>
+        )}
         <View style={styles.emiRow}>
           <Text style={styles.emiLabel}>Due Date:</Text>
           <Text style={styles.emiValue}>{formatDate(item.dueDate)}</Text>
@@ -223,9 +278,43 @@ const TodayEMIScreen = ({ navigation, route }) => {
       </View>
 
       {item.status !== 'paid' && (
-        <TouchableOpacity style={styles.payBtn} onPress={() => handleMarkPaid(item._id)}>
-          <Text style={styles.payBtnText}>Receive Payment</Text>
-        </TouchableOpacity>
+        <View style={styles.emiActionRow}>
+          {item.penaltyAmount > 0 && (
+            <TouchableOpacity
+              style={[
+                styles.clearOverdueBtn,
+                (clearingOverdue === item._id || markingPaid) && styles.clearOverdueBtnDisabled
+              ]}
+              onPress={() => handleClearOverdue(item)}
+              disabled={!!clearingOverdue || !!markingPaid}
+              activeOpacity={0.7}
+            >
+              <Ionicons 
+                name="remove-circle-outline" 
+                size={18} 
+                color={clearingOverdue === item._id ? colors.textLight : colors.warning} 
+                style={styles.clearOverdueIcon}
+              />
+              <Text style={styles.clearOverdueBtnText}>
+                {clearingOverdue === item._id ? 'Clearing...' : 'Clear Overdue'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[
+              styles.payBtn,
+              (markingPaid === item._id || clearingOverdue) && styles.payBtnDisabled
+            ]}
+            onPress={() => handleMarkPaid(item._id)}
+            disabled={!!clearingOverdue || !!markingPaid}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="checkmark-circle-outline" size={18} color={colors.white} style={styles.payBtnIcon} />
+            <Text style={styles.payBtnText}>
+              {markingPaid === item._id ? 'Processing...' : 'Receive Payment'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
     </Card>
   );
@@ -288,32 +377,71 @@ const TodayEMIScreen = ({ navigation, route }) => {
 
             <Text style={styles.sectionLabel}>User Selection</Text>
             <TouchableOpacity
-              style={styles.userPicker}
+              style={[
+                styles.userPicker,
+                showUserDropdown && styles.userPickerActive
+              ]}
               onPress={() => setShowUserDropdown(!showUserDropdown)}
+              activeOpacity={0.7}
             >
-              <Text style={styles.userPickerValue}>
-                {selectedUserIds.length === 0 ? 'All Customers' : `${selectedUserIds.length} Customers Selected`}
-              </Text>
-              <Ionicons name={showUserDropdown ? "chevron-up" : "chevron-down"} size={20} color={colors.textLight} />
+              <View style={styles.userPickerContent}>
+                <Ionicons name="people-outline" size={18} color={colors.primary} />
+                <Text style={styles.userPickerValue}>
+                  {selectedUserIds.length === 0 ? 'All Customers' : `${selectedUserIds.length} Customer${selectedUserIds.length > 1 ? 's' : ''} Selected`}
+                </Text>
+              </View>
+              <Ionicons 
+                name={showUserDropdown ? "chevron-up" : "chevron-down"} 
+                size={20} 
+                color={colors.primary} 
+              />
             </TouchableOpacity>
 
             {showUserDropdown && (
               <View style={styles.dropdownList}>
-                <ScrollView nestedScrollEnabled style={{ maxHeight: 180 }}>
-                  {users.map(u => (
-                    <TouchableOpacity
-                      key={u._id}
-                      style={styles.dropdownItem}
-                      onPress={() => toggleUserSelection(u._id)}
-                    >
-                      <Ionicons
-                        name={selectedUserIds.includes(u._id) ? "checkbox" : "square-outline"}
-                        size={20}
-                        color={colors.primary}
-                      />
-                      <Text style={styles.dropdownText}>{u.name}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <ScrollView 
+                  nestedScrollEnabled 
+                  style={{ maxHeight: 200 }}
+                  showsVerticalScrollIndicator={true}
+                >
+                  {users.length === 0 ? (
+                    <View style={styles.dropdownEmpty}>
+                      <Text style={styles.dropdownEmptyText}>No users available</Text>
+                    </View>
+                  ) : (
+                    users.map(u => {
+                      const isSelected = selectedUserIds.includes(u._id);
+                      return (
+                        <TouchableOpacity
+                          key={u._id}
+                          style={[
+                            styles.dropdownItem,
+                            isSelected && styles.dropdownItemSelected
+                          ]}
+                          onPress={() => toggleUserSelection(u._id)}
+                          activeOpacity={0.7}
+                        >
+                          <View style={[
+                            styles.checkboxContainer,
+                            isSelected && styles.checkboxContainerSelected
+                          ]}>
+                            {isSelected && (
+                              <Ionicons name="checkmark" size={14} color={colors.white} />
+                            )}
+                          </View>
+                          <View style={styles.dropdownItemContent}>
+                            <Text style={[
+                              styles.dropdownText,
+                              isSelected && styles.dropdownTextSelected
+                            ]}>{u.name}</Text>
+                            {u.mobile && (
+                              <Text style={styles.dropdownSubtext}>{u.mobile}</Text>
+                            )}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })
+                  )}
                 </ScrollView>
               </View>
             )}
@@ -342,9 +470,22 @@ const TodayEMIScreen = ({ navigation, route }) => {
       )}
 
       {/* Custom Calendar Date Picker Modal */}
-      <Modal visible={showDatePickerModal} transparent animationType="slide">
-        <View style={styles.modalBg}>
-          <View style={styles.calendarCard}>
+      <Modal 
+        visible={showDatePickerModal} 
+        transparent 
+        animationType="slide"
+        onRequestClose={() => setShowDatePickerModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalBg} 
+          activeOpacity={1}
+          onPress={() => setShowDatePickerModal(false)}
+        >
+          <TouchableOpacity 
+            style={styles.calendarCard}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
             <View style={styles.calendarHeader}>
               <Text style={styles.calendarTitle}>
                 {pickingDateFor === 'start' ? 'Start Date' : 'End Date'}
@@ -440,8 +581,8 @@ const TodayEMIScreen = ({ navigation, route }) => {
                 <Text style={styles.modalBtnTextPrimary}>Confirm Date</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {loading && !refreshing ? (
@@ -620,27 +761,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.white,
+    minHeight: 48,
+  },
+  userPickerActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.accentLight,
+  },
+  userPickerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
   },
   userPickerValue: {
     fontSize: fontSize.md,
     color: colors.text,
+    fontWeight: fontWeight.medium,
   },
   dropdownList: {
-    marginTop: 4,
-    borderWidth: 1,
+    marginTop: spacing.sm,
+    borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: borderRadius.lg,
     backgroundColor: colors.white,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 6,
+    maxHeight: 200,
+    overflow: 'hidden',
   },
   dropdownItem: {
     flexDirection: 'row',
@@ -648,11 +803,50 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
+    backgroundColor: colors.white,
+  },
+  dropdownItemSelected: {
+    backgroundColor: colors.accentLight,
+  },
+  dropdownItemContent: {
+    flex: 1,
+    marginLeft: spacing.sm,
+  },
+  checkboxContainer: {
+    width: 22,
+    height: 22,
+    borderRadius: borderRadius.sm,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.white,
+  },
+  checkboxContainerSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   dropdownText: {
-    marginLeft: spacing.sm,
     fontSize: fontSize.md,
     color: colors.text,
+    fontWeight: fontWeight.medium,
+  },
+  dropdownTextSelected: {
+    color: colors.primary,
+    fontWeight: fontWeight.semibold,
+  },
+  dropdownSubtext: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  dropdownEmpty: {
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  dropdownEmptyText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
   },
   filterActions: {
     flexDirection: 'row',
@@ -668,6 +862,12 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
   },
+  emiCardPenalty: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.error,
+  },
+  penaltyValue: { color: colors.error },
+  penaltyText: { color: colors.error },
   emiHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -713,21 +913,62 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.text,
   },
+  emiActionRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
   payBtn: {
+    flex: 1,
     backgroundColor: colors.primary,
-    padding: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
     borderRadius: borderRadius.lg,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 3,
+  },
+  payBtnDisabled: {
+    opacity: 0.6,
+  },
+  payBtnIcon: {
+    marginRight: 2,
   },
   payBtnText: {
     color: colors.white,
-    fontWeight: fontWeight.bold,
-    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.sm,
+  },
+  clearOverdueBtn: {
+    flex: 1,
+    backgroundColor: colors.warningLight,
+    borderWidth: 1.5,
+    borderColor: colors.warning,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  clearOverdueBtnDisabled: {
+    opacity: 0.6,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  clearOverdueIcon: {
+    marginRight: 2,
+  },
+  clearOverdueBtnText: {
+    color: colors.warning,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.sm,
   },
   center: {
     flex: 1,
@@ -746,20 +987,22 @@ const styles = StyleSheet.create({
   },
   modalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
+    alignItems: 'center',
     padding: spacing.xl,
   },
   calendarCard: {
     backgroundColor: colors.white,
     padding: spacing.lg,
-    borderRadius: borderRadius.xxl || 24,
+    borderRadius: borderRadius.xl,
     width: '100%',
+    maxWidth: 400,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 20,
-    elevation: 10,
+    elevation: 15,
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -807,17 +1050,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: borderRadius.md,
+    backgroundColor: colors.backgroundSecondary,
+    margin: 2,
   },
   selectedDaySlot: {
     backgroundColor: colors.primary,
   },
   todaySlot: {
-    borderWidth: 1,
+    backgroundColor: colors.accentLight,
+    borderWidth: 2,
     borderColor: colors.primary,
   },
   dayText: {
     fontSize: fontSize.sm,
     color: colors.text,
+    fontWeight: fontWeight.medium,
   },
   selectedDayText: {
     color: colors.white,

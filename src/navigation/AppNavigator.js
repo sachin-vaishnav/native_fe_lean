@@ -39,6 +39,8 @@ import TotalEMIScreen from '../screens/admin/TotalEMIScreen';
 import AdminLoanDetailScreen from '../screens/admin/AdminLoanDetailScreen';
 import CreateUserScreen from '../screens/admin/CreateUserScreen';
 import AdminNotificationScreen from '../screens/admin/AdminNotificationScreen';
+import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen';
+import HelpScreen from '../screens/user/HelpScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -291,6 +293,7 @@ const UserStack = () => (
     }}
   >
     <Stack.Screen name="UserHome" component={UserTabs} options={{ headerShown: false }} />
+    <Stack.Screen name="Help" component={HelpScreen} options={{ title: 'Help' }} />
     <Stack.Screen name="ApplyLoan" component={ApplyLoanScreen} options={{ title: 'Apply for Loan' }} />
     <Stack.Screen name="EditDocument" component={EditDocumentScreen} options={{ title: 'Edit Document Details' }} />
     <Stack.Screen name="LoanDetails" component={LoanDetailsScreen} options={{ title: 'Loan Details' }} />
@@ -309,6 +312,8 @@ const AdminStack = () => (
     }}
   >
     <Stack.Screen name="AdminDashboard" component={AdminTabs} options={{ headerShown: false }} />
+    <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} options={{ title: 'Settings' }} />
+    <Stack.Screen name="AdminLoanDetail" component={AdminLoanDetailScreen} options={{ title: 'Loan Details' }} />
     <Stack.Screen name="UserDetail" component={UserDetailScreen} options={{ title: 'User Details' }} />
     <Stack.Screen name="LoanReview" component={LoanReviewScreen} options={{ title: 'Review Loan' }} />
     <Stack.Screen name="TotalEMIs" component={TotalEMIScreen} options={{ title: 'EMI Statistics' }} />

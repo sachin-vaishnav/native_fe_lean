@@ -93,6 +93,9 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.userName}>{user?.name || 'User'}</Text>
           </View>
           <View style={styles.headerButtons}>
+            <TouchableOpacity onPress={() => navigation.navigate('Help')} style={styles.helpIconBtn}>
+              <Ionicons name="help-circle" size={26} color={colors.primary} />
+            </TouchableOpacity>
             <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
               <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
@@ -177,7 +180,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg, paddingTop: spacing.md },
   greeting: { fontSize: fontSize.md, color: colors.textSecondary },
   userName: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.text },
-  headerButtons: { flexDirection: 'row', alignItems: 'center' },
+  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  helpIconBtn: { padding: spacing.sm },
   logoutButton: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: colors.errorLight, borderRadius: borderRadius.md, marginLeft: spacing.sm },
   logoutText: { fontSize: fontSize.sm, color: colors.error, fontWeight: fontWeight.medium },
   statsContainer: { flexDirection: 'row', marginBottom: spacing.md },

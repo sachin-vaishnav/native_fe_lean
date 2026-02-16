@@ -27,10 +27,19 @@ export const useNotifications = () => {
 
 const getSocketUrl = () => {
   if (Platform.OS === 'web') return 'https://native-be-lean.onrender.com';
-  const custom = Constants.expoConfig?.extra?.apiUrl;
-  if (custom) return custom.replace(/\/api\/?$/, '');
-  if (Platform.OS === 'android') return 'http://10.0.2.2:5001';
-  return 'http://localhost:5001';
+  
+  // Try multiple ways to get the config URL
+  const custom = Constants.expoConfig?.extra?.apiUrl || Constants.manifest?.extra?.apiUrl;
+  if (custom && custom.trim()) {
+    const socketUrl = custom.replace(/\/api\/?$/, '');
+    console.log('Using Socket URL from config:', socketUrl);
+    return socketUrl;
+  }
+  
+  // Production fallback - always use Render URL for APK builds
+  const fallbackUrl = 'https://native-be-lean.onrender.com';
+  console.log('Using fallback Socket URL:', fallbackUrl);
+  return fallbackUrl;
 };
 
 export const NotificationProvider = ({ children }) => {
