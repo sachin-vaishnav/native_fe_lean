@@ -28,6 +28,7 @@ import NotificationScreen from '../screens/user/NotificationScreen';
 import ProfileScreen from '../screens/user/ProfileScreen';
 import EditProfileScreen from '../screens/user/EditProfileScreen';
 import EditDocumentScreen from '../screens/user/EditDocumentScreen';
+import UPIPaymentScreen from '../screens/user/UPIPaymentScreen';
 
 // Admin Screens
 import AdminHomeScreen from '../screens/admin/AdminHomeScreen';
@@ -157,7 +158,8 @@ const UserLoansStack = () => (
   >
     <Stack.Screen name="MyLoans" component={MyLoansScreen} options={{ title: 'My Loans' }} />
     <Stack.Screen name="LoanDetails" component={LoanDetailsScreen} options={{ title: 'Loan Details' }} />
-    <Stack.Screen name="Payment" component={PaymentScreen} options={{ title: 'Pay EMI' }} />
+    <Stack.Screen name="Payment" component={PaymentScreen} options={{ title: 'Pay EMI (Razorpay)' }} />
+    <Stack.Screen name="UPIPayment" component={UPIPaymentScreen} options={{ title: 'Pay EMI' }} />
   </Stack.Navigator>
 );
 
@@ -297,7 +299,8 @@ const UserStack = () => (
     <Stack.Screen name="ApplyLoan" component={ApplyLoanScreen} options={{ title: 'Apply for Loan' }} />
     <Stack.Screen name="EditDocument" component={EditDocumentScreen} options={{ title: 'Edit Document Details' }} />
     <Stack.Screen name="LoanDetails" component={LoanDetailsScreen} options={{ title: 'Loan Details' }} />
-    <Stack.Screen name="Payment" component={PaymentScreen} options={{ title: 'Pay EMI' }} />
+    <Stack.Screen name="Payment" component={PaymentScreen} options={{ title: 'Pay EMI (Razorpay)' }} />
+    <Stack.Screen name="UPIPayment" component={UPIPaymentScreen} options={{ title: 'Pay EMI' }} />
     <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} options={{ headerShown: false }} />
   </Stack.Navigator>
 );

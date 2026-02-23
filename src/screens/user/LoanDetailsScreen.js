@@ -113,7 +113,8 @@ const LoanDetailsScreen = ({ route, navigation }) => {
   };
 
   const handlePayEMI = (emi) => {
-    navigation.navigate('Payment', { emi, loan });
+    // Temporarily show UPI details screen instead of Razorpay
+    navigation.navigate('UPIPayment', { emi, loan });
   };
 
   const handleLoadMore = () => {

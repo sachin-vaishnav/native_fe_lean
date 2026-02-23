@@ -50,7 +50,8 @@ const HomeScreen = ({ navigation }) => {
   const handleLoanPress = (loan) => navigation.navigate('LoanDetails', { loanId: loan._id });
   const handlePayEMI = (emi) => {
     const loan = loans.find(l => l._id === emi.loanId || l._id === emi.loanId?._id) || emi.loanId;
-    navigation.navigate('Payment', { emi, loan });
+    // Temporarily show UPI details screen instead of Razorpay
+    navigation.navigate('UPIPayment', { emi, loan });
   };
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
